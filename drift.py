@@ -5,7 +5,6 @@ drift -- deal with trajectories
 
 import numpy as np
 import netCDF4 as nc
-import datetime as dt
 import time as tm
 
 def gdp2nc4(finame, fmname, foname):
@@ -24,7 +23,6 @@ def gdp2nc4(finame, fmname, foname):
     #=====================================================================
     # Set up the output file
     #=====================================================================
-    #==========================================================
 
     # create the out-file
     fo = nc.Dataset(foname, 'w', format='NETCDF4', clobber=True)
@@ -34,8 +32,7 @@ def gdp2nc4(finame, fmname, foname):
     fo.createVariable('buoycount', np.int64, 'buoycount')
     float64vl = fo.createVLType(np.float64, 'float64vl')
 
-    # create the variables 
-    # first all those that are part of the actual data set
+    # create the variables: data
     aomlid_v = fo.createVariable('aomlid', np.int64, 'buoycount')
     aomlid_v.long_name = 'AOML buoy identification number (PKey)'
 
@@ -79,8 +76,7 @@ def gdp2nc4(finame, fmname, foname):
     vartemp_v.long_name = 'variance of the temperature'
     vartemp_v.units = 'K**2'
 
-    # create the variables 
-    # then the metadata
+    # create the variables : metadata
     deptime_v = fo.createVariable('deptime', np.float64, 'buoycount')
     deptime_v.long_name = 'deployment time stamp'
     deptime_v.units = 'days since 1980-01-01 00:00:00'
@@ -114,20 +110,54 @@ def gdp2nc4(finame, fmname, foname):
     fo.source  = 'from ' + finame + " and " + fmname
 
     #=====================================================================
-    # set up the input file and the metadata file
+    # get all the metadata (< 1MB)
     #=====================================================================
-
-    fi = open(finame, 'r')
 
     fm = open(fmname, 'r')
 
-    #=====================================================================
-    # get all the metadata (< 1MB)
-    #=====================================================================
+    # get line by line and put into arrays
+    aomlid_m  = np.empty(0, np.int64)
+    deptime_m = np.empty(0, np.float64)
+    deplat_m  = np.empty(0, np.float64)
+    deplon_m  = np.empty(0, np.float64)
+    endtime_m = np.empty(0, np.float64)
+    endlat_m  = np.empty(0, np.float64)
+    endlon_m  = np.empty(0, np.float64)
+    dltime_m  = np.empty(0, np.float64)
+    reftime = tm.mktime(tm.strptime('1980/01/01 00:00', '%Y/%m/%d %H:%M')) 
+    n = 0
+    while True:
+        lm = fm.readline()
+        if lm == '': break
+        n += 1
+        mdata = lm.split()
+        aomlid_m  = np.append(aomlid_m, np.int(mdata[0]))
+        deplat_m  = np.append(deplat_m, np.float(mdata[6]))
+        deplon_m  = np.append(deplon_m, np.float(mdata[7]))
+        endlat_m  = np.append(endlat_m, np.float(mdata[10]))
+        endlon_m  = np.append(endlon_m, np.float(mdata[11]))
+        deptime_m = np.append(deptime_m, ( \
+              tm.mktime(tm.strptime(mdata[4] + ' ' + mdata[5], '%Y/%m/%d %H:%M')) \
+              - reftime \
+            ) / 3600.0 / 24.0 \
+          )
+        endtime_m = np.append(endtime_m, ( \
+              tm.mktime(tm.strptime(mdata[8] + ' ' + mdata[9], '%Y/%m/%d %H:%M')) \
+              - reftime \
+            ) / 3600.0 / 24.0 \
+          )
+        dltime_m = np.append(dltime_m, ( \
+              tm.mktime(tm.strptime(mdata[12] + ' ' + mdata[13], '%Y/%m/%d %H:%M')) \
+              - reftime \
+            ) / 3600.0 / 24.0 \
+          )
+    fm.close()      
 
     #=====================================================================
     # get and put the data
     #=====================================================================
+
+    fi = open(finame, 'r')
 
     # For each aomlid, get the whole trajectory and put it into the netCDF4
     # file.
