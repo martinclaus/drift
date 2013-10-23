@@ -8,12 +8,14 @@ import netCDF4 as nc
 import datetime as dt
 import time as tm
 
-def gdp2nc4(finame, foname):
+def gdp2nc4(finame, fmname, foname):
     """Put drifter data to a netCDF4 file.
 
     ATTENTION: For now, the file foname will be overwritten.
 
     finame : full path to the input file
+
+    fmname : full path to the metadata file
     
     foname : full path to the output file
 
@@ -107,21 +109,50 @@ def gdp2nc4(finame, foname):
     dltime_v.long_name = 'drogue lost time stamp'
     dltime_v.units = 'days since 1980-01-01 00:00:00'
 
-    # globle attributes
+    # global attributes
     fo.history = 'created by drift.gdp2nc2 on ' + tm.ctime(tm.time())
-    fo.source  = 'from ' + finame
+    fo.source  = 'from ' + finame + " and " + fmname
 
     #=====================================================================
-    # set up the input file
+    # set up the input file and the metadata file
     #=====================================================================
+
+    fi = open(finame, 'r')
+
+    fm = open(fmname, 'r')
+
+    #=====================================================================
+    # get all the metadata (< 1MB)
+    #=====================================================================
+
+    #=====================================================================
+    # get and put the data
+    #=====================================================================
+
+    # For each aomlid, get the whole trajectory and put it into the netCDF4
+    # file.
+
+    # initalize with aomlid = 0 and empty fields
+
+    # while reading line by line:
+        # if the aomlid changed or end of file (empty line)
+            # put the fields to the netCDF4 file
+            # put the relevant metadata as well
+            # empty fields
+        # if end of file
+            # break the loop 
+        # continue accumulating the fields
     
     #=====================================================================
     # clean up
     #=====================================================================
 
-    # close the input file
-
     # close the output file
     fo.close()
+
+    # close the input file
+    fi.close()
+
+    # close the metadata file
 
     return None
