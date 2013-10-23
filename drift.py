@@ -19,6 +19,13 @@ def gdp2nc4(finame, fmname, foname):
     foname : full path to the output file
 
     """
+    tic = tm.time()
+
+    print "gdp2nc4"
+    print "working with"
+    print finame
+    print fmname
+    print foname
 
     #=====================================================================
     # Set up the output file
@@ -29,7 +36,7 @@ def gdp2nc4(finame, fmname, foname):
 
     # create dims and vlan data type
     fo.createDimension('buoycount', size=None)
-    fo.createVariable('buoycount', np.int64, 'buoycount')
+    buoycount_v = fo.createVariable('buoycount', np.int64, 'buoycount')
     float64vl = fo.createVLType(np.float64, 'float64vl')
 
     # create the variables: data
@@ -38,7 +45,7 @@ def gdp2nc4(finame, fmname, foname):
 
     time_v = fo.createVariable('time', float64vl, 'buoycount')
     time_v.long_name = 'time stamp'
-    time_v.units = 'days since 1980-01-01 00:00:00'
+    time_v.units = 'seconds since 1980-01-01 00:00:00'
 
     lat_v = fo.createVariable('lat', float64vl, 'buoycount')
     lat_v.long_name = 'latitude (-90,90)'
@@ -79,7 +86,7 @@ def gdp2nc4(finame, fmname, foname):
     # create the variables : metadata
     deptime_v = fo.createVariable('deptime', np.float64, 'buoycount')
     deptime_v.long_name = 'deployment time stamp'
-    deptime_v.units = 'days since 1980-01-01 00:00:00'
+    deptime_v.units = 'seconds since 1980-01-01 00:00:00'
 
     deplat_v = fo.createVariable('deplat', np.float64, 'buoycount')
     deplat_v.long_name = 'deployment latitude (-90,90)'
@@ -91,7 +98,7 @@ def gdp2nc4(finame, fmname, foname):
 
     endtime_v = fo.createVariable('endtime', np.float64, 'buoycount')
     endtime_v.long_name = 'end time stamp'
-    endtime_v.units = 'days since 1980-01-01 00:00:00'
+    endtime_v.units = 'seconds since 1980-01-01 00:00:00'
 
     endlat_v = fo.createVariable('endlat', np.float64, 'buoycount')
     endlat_v.long_name = 'end latitude (-90,90)'
@@ -103,7 +110,7 @@ def gdp2nc4(finame, fmname, foname):
 
     dltime_v = fo.createVariable('dltime', np.float64, 'buoycount')
     dltime_v.long_name = 'drogue lost time stamp'
-    dltime_v.units = 'days since 1980-01-01 00:00:00'
+    dltime_v.units = 'seconds since 1980-01-01 00:00:00'
 
     # global attributes
     fo.history = 'created by drift.gdp2nc2 on ' + tm.ctime(tm.time())
@@ -112,6 +119,8 @@ def gdp2nc4(finame, fmname, foname):
     #=====================================================================
     # get all the metadata (< 1MB)
     #=====================================================================
+
+    print "get metadata ..."
 
     fm = open(fmname, 'r')
 
@@ -138,40 +147,110 @@ def gdp2nc4(finame, fmname, foname):
         endlon_m  = np.append(endlon_m, np.float(mdata[11]))
         deptime_m = np.append(deptime_m, ( \
               tm.mktime(tm.strptime(mdata[4] + ' ' + mdata[5], '%Y/%m/%d %H:%M')) \
-              - reftime \
-            ) / 3600.0 / 24.0 \
-          )
+              - reftime))
         endtime_m = np.append(endtime_m, ( \
               tm.mktime(tm.strptime(mdata[8] + ' ' + mdata[9], '%Y/%m/%d %H:%M')) \
-              - reftime \
-            ) / 3600.0 / 24.0 \
-          )
+              - reftime))
         dltime_m = np.append(dltime_m, ( \
               tm.mktime(tm.strptime(mdata[12] + ' ' + mdata[13], '%Y/%m/%d %H:%M')) \
-              - reftime \
-            ) / 3600.0 / 24.0 \
-          )
+              - reftime))
     fm.close()      
+
+    print "... done after %  12.6f seconds" % (tm.time() - tic)
 
     #=====================================================================
     # get and put the data
     #=====================================================================
+
+    print "get data ..."
 
     fi = open(finame, 'r')
 
     # For each aomlid, get the whole trajectory and put it into the netCDF4
     # file.
 
-    # initalize with aomlid = 0 and empty fields
+    # empty fields
+    time    = np.empty(0, np.float64)
+    lat     = np.empty(0, np.float64)
+    lon     = np.empty(0, np.float64)
+    temp    = np.empty(0, np.float64)
+    u       = np.empty(0, np.float64)
+    v       = np.empty(0, np.float64)
+    speed   = np.empty(0, np.float64)
+    varlat  = np.empty(0, np.float64)
+    varlon  = np.empty(0, np.float64)
+    vartemp = np.empty(0, np.float64)
+    aomlid = 0
 
-    # while reading line by line:
-        # if the aomlid changed or end of file (empty line)
-            # put the fields to the netCDF4 file
-            # put the relevant metadata as well
-            # empty fields
-        # if end of file
-            # break the loop 
-        # continue accumulating the fields
+    n = 0;
+    while True:
+        li = fi.readline()
+        if li == '': break
+        if aomlid == 0: aomlid = int(li.split()[0])
+        if aomlid == int(li.split()[0]):
+            idata = li.split()
+            time = np.append(time, \
+              tm.mktime(tm.strptime(idata[3]+idata[1]+'01 00:00', '%Y%m%d %H:%M')) \
+              + (float(idata[2]) - 1.0) * 24 * 3600 \
+              - reftime)
+            lat     = np.append(lat,     float(idata[4]))
+            lon     = np.append(lon,     float(idata[5]))
+            temp    = np.append(temp,    float(idata[6]))
+            u       = np.append(u,       float(idata[7]))
+            v       = np.append(v,       float(idata[8]))
+            speed   = np.append(speed,   float(idata[8]))
+            varlat  = np.append(varlat,  float(idata[9]))
+            varlon  = np.append(varlon,  float(idata[10]))
+            vartemp = np.append(vartemp, float(idata[11]))
+        else:
+            # replace NaN for missing value (999.999)
+            temp[temp==999.999] = np.NaN
+            u[u==999.999] = np.NaN
+            v[v==999.999] = np.NaN
+            speed[speed==999.999] = np.NaN
+            varlat[varlat==999.999] = np.NaN
+            varlon[varlon==999.999] = np.NaN
+            vartemp[vartemp==999.999] = np.NaN
+
+            # put data
+            buoycount_v[n] = n
+            aomlid_v[n]  = aomlid
+            time_v[n]    = time
+            lat_v[n]     = lat
+            lon_v[n]     = lon
+            u_v[n]       = u
+            v_v[n]       = v
+            speed_v[n]   = speed
+            temp_v[n]    = temp
+            varlat_v[n]  = varlat
+            varlon_v[n]  = varlon
+            vartemp_v[n] = vartemp
+
+            # put metadata
+            mindex = (aomlid_m == aomlid)
+            deptime_v[n] = deptime_m[mindex]
+            deplat_v[n]  = deplat_m[mindex]
+            deplon_v[n]  = deplon_m[mindex]
+            endtime_v[n] = endtime_m[mindex]
+            endlat_v[n]  = endlat_m[mindex]
+            endlon_v[n]  = endlon_m[mindex]
+            dltime_v[n]  = dltime_m[mindex]
+
+            # empty arrays
+            time    = np.empty(0, np.float64)
+            lat     = np.empty(0, np.float64)
+            lon     = np.empty(0, np.float64)
+            temp    = np.empty(0, np.float64)
+            u       = np.empty(0, np.float64)
+            v       = np.empty(0, np.float64)
+            speed   = np.empty(0, np.float64)
+            varlat  = np.empty(0, np.float64)
+            varlon  = np.empty(0, np.float64)
+            vartemp = np.empty(0, np.float64)
+
+            print "... done for aomlid = % 10d (n=% 4d) after % 12.6f seconds" % (aomlid, n, tm.time() - tic)
+            aomlid = 0
+            n += 1
     
     #=====================================================================
     # clean up
@@ -183,6 +262,6 @@ def gdp2nc4(finame, fmname, foname):
     # close the input file
     fi.close()
 
-    # close the metadata file
+    print "gdp2nc4 done after % 12.6f seconds" % (tm.time() - tic)
 
     return None
