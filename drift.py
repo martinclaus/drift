@@ -151,9 +151,12 @@ def gdp2nc4(finame, fmname, foname):
         endtime_m = np.append(endtime_m, ( \
               tm.mktime(tm.strptime(mdata[8] + ' ' + mdata[9], '%Y/%m/%d %H:%M')) \
               - reftime))
-        dltime_m = np.append(dltime_m, ( \
-              tm.mktime(tm.strptime(mdata[12] + ' ' + mdata[13], '%Y/%m/%d %H:%M')) \
-              - reftime))
+        if mdata[12] == '0000/00/00':      
+            dltime_m = np.append(dltime_m, np.NaN)
+        else:    
+            dltime_m = np.append(dltime_m, ( \
+                  tm.mktime(tm.strptime(mdata[12] + ' ' + mdata[13], '%Y/%m/%d %H:%M')) \
+                  - reftime))
     fm.close()      
 
     print "... done after %  12.6f seconds" % (tm.time() - tic)
@@ -185,9 +188,9 @@ def gdp2nc4(finame, fmname, foname):
     n = 0;
     while True:
         li = fi.readline()
-        if li == '': break
-        if aomlid == 0: aomlid = int(li.split()[0])
-        if aomlid == int(li.split()[0]):
+        if (aomlid == 0) & (li == ''): break
+        if (aomlid == 0) & (li != ''): aomlid = int(li.split()[0])
+        if (aomlid == int(li.split()[0])) & (li != ''):
             idata = li.split()
             time = np.append(time, \
               tm.mktime(tm.strptime(idata[3]+idata[1]+'01 00:00', '%Y%m%d %H:%M')) \
@@ -248,7 +251,8 @@ def gdp2nc4(finame, fmname, foname):
             varlon  = np.empty(0, np.float64)
             vartemp = np.empty(0, np.float64)
 
-            print "... done for aomlid = % 10d (n=% 4d) after % 12.6f seconds" % (aomlid, n, tm.time() - tic)
+            print "... done for aomlid = % 10d (n=% 4d) after % 12.6f seconds" \ 
+              % (aomlid, n, tm.time() - tic)
             aomlid = 0
             n += 1
     
