@@ -187,13 +187,22 @@ def gdp2nc4(finame, fmname, foname):
 
     n = 0;
     while True:
+
+        # get next line
         li = fi.readline()
-        if (aomlid == 0) & (li == ''): break
-        if (aomlid == 0) & (li != ''): aomlid = int(li.split()[0])
-        if (aomlid == int(li.split()[0])) & (li != ''):
+
+        # if file ended (li empty) and buffers are written (aomlid is zero): finish
+        if (li == '') and (aomlid == 0): break
+
+        # if not end of file but all buffers are written: start new trajectory with aomlid
+        if (li != '') and (aomlid == 0): aomlid = int(li.split()[0])
+
+        # if not end of file and aomlid still valid: continue to fill buffers,
+        # else: put to disk and start over
+        if (li != '') and (aomlid == int(li.split()[0])):
             idata = li.split()
             time = np.append(time, \
-              tm.mktime(tm.strptime(idata[3]+idata[1]+'01 00:00', '%Y%m%d %H:%M')) \
+              tm.mktime(tm.strptime(idata[3]+idata[1].zfill(2)+'01 00:00', '%Y%m%d %H:%M')) \
               + (float(idata[2]) - 1.0) * 24 * 3600 \
               - reftime)
             lat     = np.append(lat,     float(idata[4]))
@@ -205,6 +214,7 @@ def gdp2nc4(finame, fmname, foname):
             varlat  = np.append(varlat,  float(idata[9]))
             varlon  = np.append(varlon,  float(idata[10]))
             vartemp = np.append(vartemp, float(idata[11]))
+
         else:
             # replace NaN for missing value (999.999)
             temp[temp==999.999] = np.NaN
@@ -251,8 +261,11 @@ def gdp2nc4(finame, fmname, foname):
             varlon  = np.empty(0, np.float64)
             vartemp = np.empty(0, np.float64)
 
-            print "... done for aomlid = % 10d (n=% 4d) after % 12.6f seconds" \ 
+            # status report
+            print "... done for aomlid = % 10d (n=% 4d) after % 12.6f seconds" \
               % (aomlid, n, tm.time() - tic)
+
+            # reset buoy id  
             aomlid = 0
             n += 1
     
