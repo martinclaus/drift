@@ -262,7 +262,7 @@ def gdp2nc4(finame, fmname, foname):
             vartemp = np.empty(0, np.float64)
 
             # status report
-            print "... done for aomlid = % 10d (n=% 4d) after % 12.6f seconds" \
+            print "... done for aomlid = % 9d (n=% 6d) after % 12.6f seconds" \
               % (aomlid, n, tm.time() - tic)
 
             # reset buoy id  
