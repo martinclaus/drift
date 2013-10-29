@@ -15,7 +15,7 @@ def gdp2nc4(finame, fmname, foname):
     finame : full path to the input file
 
     fmname : full path to the metadata file
-    
+
     foname : full path to the output file
 
     """
@@ -133,7 +133,7 @@ def gdp2nc4(finame, fmname, foname):
     endlat_m  = np.empty(0, np.float64)
     endlon_m  = np.empty(0, np.float64)
     dltime_m  = np.empty(0, np.float64)
-    reftime = tm.mktime(tm.strptime('1980/01/01 00:00', '%Y/%m/%d %H:%M')) 
+    reftime = tm.mktime(tm.strptime('1980/01/01 00:00', '%Y/%m/%d %H:%M'))
     n = 0
     while True:
         lm = fm.readline()
@@ -151,13 +151,13 @@ def gdp2nc4(finame, fmname, foname):
         endtime_m = np.append(endtime_m, ( \
               tm.mktime(tm.strptime(mdata[8] + ' ' + mdata[9], '%Y/%m/%d %H:%M')) \
               - reftime))
-        if mdata[12] == '0000/00/00':      
+        if mdata[12] == '0000/00/00':
             dltime_m = np.append(dltime_m, np.NaN)
-        else:    
+        else:
             dltime_m = np.append(dltime_m, ( \
                   tm.mktime(tm.strptime(mdata[12] + ' ' + mdata[13], '%Y/%m/%d %H:%M')) \
                   - reftime))
-    fm.close()      
+    fm.close()
 
     print "... done after %  12.6f seconds" % (tm.time() - tic)
 
@@ -265,10 +265,10 @@ def gdp2nc4(finame, fmname, foname):
             print "... done for aomlid = % 9d (n=% 6d) after % 12.6f seconds" \
               % (aomlid, n, tm.time() - tic)
 
-            # reset buoy id  
+            # reset buoy id
             aomlid = 0
             n += 1
-    
+
     #=====================================================================
     # clean up
     #=====================================================================

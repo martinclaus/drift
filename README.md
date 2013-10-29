@@ -13,4 +13,11 @@ For an implementation of netCDF-4 for python see
 
 How to obtain the ascii data:
 <http://www.aoml.noaa.gov/envids/gld/FtpInterpolatedInstructions.php>
- 
+
+
+yomaha2nc4
+--------------------------------------------------------------------------------
+
+Convert the Yomaha07 data, contained in an ASCII table, to a netCDF4 file.
+The output file will have a fixed dimension length, which reduces the required
+disk space dramatically.
